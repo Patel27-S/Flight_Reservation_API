@@ -157,6 +157,3 @@ def listing_passengers():
 def listing_reservation():
     list = [i for i in Reservation.query.all()]
     return jsonify({'Reservation': list})
-
-
-
