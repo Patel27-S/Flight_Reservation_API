@@ -4,6 +4,8 @@ from datetime import date
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
 db = SQLAlchemy(app)
 
 
@@ -14,8 +16,8 @@ class Flight(db.Model):
     airline = db.Column(db.String(100))
     departure_city = db.Column(db.String(100))
     arrival_city = db.Column(db.String(100))
-    date_of_departure = db.Column(db.DateTime)
-    departure_time = db.Column(db.DateTime)
+    date_of_departure = db.Column(db.Date)
+    departure_time = db.Column(db.Date)
     
     reservartion = db.relationship('Reservation', backref = 'flight', lazy = 'dynamic')
     
@@ -27,7 +29,7 @@ class Flight(db.Model):
 class Passenger(db.Model):
     
     id = db.Column(db.Integer, primary_key = True)
-    flight_id = db.Column(db.Integer, ForeignKey('flight.id'))
+    flight_id = db.Column(db.Integer, db.ForeignKey('flight.id'))
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     email = db.Column(db.String(120), unique = True)
@@ -43,8 +45,8 @@ class Passenger(db.Model):
 class Reservation(db.Model):
     
     id = db.Column(db.Integer, primary_key = True)
-    flight_number = db.Column(db.Integer, ForeignKey('flight.number'))
-    passenger_id = db.Column(db.Integer, ForeignKey('passenger.id'))
+    flight_number = db.Column(db.Integer, db.ForeignKey('flight.number'))
+    passenger_id = db.Column(db.Integer, db.ForeignKey('passenger.id'))
 
     def __repr__(self):
         return '<Reservation - {} {}>'.format(Reservation.flight_number, Reservation.passenger_id)
@@ -52,10 +54,13 @@ class Reservation(db.Model):
 
  
 # Below are all the routes/endpoints for finding flights, saving, updating and deleting reservations :
-    
+
+@app.route('/home', methods = ['GET'])
+def index():
+    return 'Hello World! I am building an API.'  
         
 @app.route('/FindFlights/<departure_city>/<arrival_city>/<date_of_departure>', methods = ['GET','POST'])
-def find_flights():
+def find_flights(departure_city, arrival_city, date_of_departure):
     flights = Flight.query.filter_by(departure_city = departure_city, arrival_city = arrival_city,\
                    date_of_departure = date_of_departure)
     # If a flight with the departure_city, arrival_city, date_of_departure requested,
@@ -95,7 +100,7 @@ def delete_reservation(passenger_id, flight_num):
         return jsonify({'Deleted_Reservation': 'The reservation has been successfully deleted.'})
 
 
-@app.route('UpdateReservation/<current_first_name>/<current_last_name>/<current_email>/<current_phone_number>/<current_flight_number>\
+@app.route('/UpdateReservation/<current_first_name>/<current_last_name>/<current_email>/<current_phone_number>/<current_flight_number>\
                               /<new_first_name>/<new_last_name>/<new_email>/<new_phone_number>,<new_flight_number>', methods = ['PUT', 'POST', 'GET'])
 
 def update_reservation(current_first_name, current_last_name, current_email, current_phone_number, current_flight_number,\
@@ -138,7 +143,7 @@ def listing_flight(airline):
 
     try:
         list = [i for i in Flight.query.filter(airline=airline)]
-    except exception as e:
+    except Exception:
         return jsonify({'Airline': 'No such airline found.'})
 
     return jsonify({'airline': list})
